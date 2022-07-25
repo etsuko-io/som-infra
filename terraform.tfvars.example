@@ -1,0 +1,5 @@
+project_id = "self-org-maps"
+region     = ""
+zone       = ""
+aws_access_key = ""
+aws_secret_key = ""
