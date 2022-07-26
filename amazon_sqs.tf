@@ -1,4 +1,4 @@
-resource "aws_sqs_queue" "terraform_queue" {
+resource "aws_sqs_queue" "som_queue" {
   name                      = "som-queue"
   delay_seconds             = 90
   max_message_size          = 2048
