@@ -23,6 +23,10 @@ output "public_ip" {
   value = aws_spot_instance_request.spot_instance.public_ip
 }
 
+output "ssh_string" {
+  value = "ssh -i ~/.ssh/ec2-spot-ssh.pem ec2-user@${aws_spot_instance_request.spot_instance.public_ip}"
+}
+
 locals {
   # yum:
   # -qq:    No output except for errors
@@ -45,7 +49,7 @@ locals {
   # docker-compose:
   # -d      Detached mode: Run containers in the background
   private_key = file("${path.module}/private/private_key")
-  user_script          = <<EOF
+  user_script = <<EOF
     #! /bin/bash
     echo "Starting user script"
     yum update -y -q
@@ -54,8 +58,8 @@ locals {
     yum -y -q install git
 
     echo "Installing docker-compose"
-    curl -L "https://github.com/docker/compose/releases/download/1.25.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    chmod +x /usr/local/bin/docker-compose
+    curl -L "https://github.com/docker/compose/releases/download/1.25.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/bin/docker-compose
+    chmod +x /usr/bin/docker-compose
 
     echo "Adding SSH"
     echo "${local.private_key}" > /root/.ssh/id_rsa
@@ -63,10 +67,8 @@ locals {
     echo "${var.ssh_public_key}" >> /root/.ssh/authorized_keys
     ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts
 
-    echo "Adding SQS URL to env"
-    echo "export SQS_URL=${aws_sqs_queue.som_queue.url}" >> /root/.bashrc
-    source ~/.bashrc
-    echo $SQS_URL
+    echo "Adding CELERY_BROKER to env"
+    export CELERY_BROKER=sqs://
 
     echo "Creating project"
     cd /opt
@@ -75,6 +77,6 @@ locals {
     git clone ${var.git_repo} .
 
     echo "Launching Docker containers"
-    /usr/local/bin/docker-compose up -d
+    make docker-build-prod
   EOF
 }
