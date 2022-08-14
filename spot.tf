@@ -4,16 +4,16 @@ data "aws_ami" "ec2_ami" {
 
   filter {
     name   = "name"
-    values = ["amzn2-ami-ecs-hvm-2.0.*-x86_64-ebs"]
+    values = ["amzn2-ami-ecs-hvm-2.0.*-arm64-ebs"]
   }
 }
 
 resource "aws_spot_instance_request" "spot_instance" {
   availability_zone    = "eu-west-1a"
-  iam_instance_profile = aws_iam_instance_profile.sqs_full_access_profile.name
+  iam_instance_profile = aws_iam_instance_profile.celery_access_profile.name
   monitoring           = true
   key_name             = "ec2-spot-ssh"
-  instance_type        = "t2.micro"
+  instance_type        = "t4g.large"
   ami                  = data.aws_ami.ec2_ami.id
   user_data            = base64encode(local.user_script)
   wait_for_fulfillment = true
@@ -49,16 +49,23 @@ locals {
   # docker-compose:
   # -d      Detached mode: Run containers in the background
   private_key = file("${path.module}/private/private_key")
+  cloudwatch_config = file("${path.module}/cloudwatch-agent/config.json")
   user_script = <<EOF
     #! /bin/bash
     echo "Starting user script"
     yum update -y -q
 
+    echo "Installing CloudWatch"
+    yum install amazon-cloudwatch-agent -y -q
+    echo "${local.cloudwatch_config}" > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+    echo "Starting CloudWatch"
+    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s
+
     echo "Installing git"
     yum -y -q install git
 
     echo "Installing docker-compose"
-    curl -L "https://github.com/docker/compose/releases/download/1.25.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/bin/docker-compose
+    curl -L "https://github.com/docker/compose/releases/download/v2.9.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/bin/docker-compose
     chmod +x /usr/bin/docker-compose
 
     echo "Adding SSH"

@@ -1,4 +1,4 @@
-After creation with terraform apply, take the output (public_ip)
+After creation with `terraform apply`, take the output (public_ip)
 
 Use SSH to access the instance:
 
