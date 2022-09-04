@@ -12,6 +12,9 @@ data "aws_iam_policy" "amazon_s3_full_access" {
 data "aws_iam_policy" "amazon_cloudwatch_full_access" {
   name = "CloudWatchFullAccess"
 }
+data "aws_iam_policy" "amazon_ses_full_access" {
+  name = "AmazonSESFullAccess"
+}
 
 
 resource "aws_iam_role" "celery_role_for_ec2" {
@@ -21,7 +24,8 @@ resource "aws_iam_role" "celery_role_for_ec2" {
   managed_policy_arns = [
     data.aws_iam_policy.amazon_sqs_full_access.arn,
     data.aws_iam_policy.amazon_s3_full_access.arn,
-    data.aws_iam_policy.amazon_cloudwatch_full_access.arn
+    data.aws_iam_policy.amazon_cloudwatch_full_access.arn,
+    data.aws_iam_policy.amazon_ses_full_access.arn,
   ]
 }
 
